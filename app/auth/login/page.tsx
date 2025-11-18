@@ -17,8 +17,13 @@ export default function LoginPage() {
     }
   }, [user, loading, router])
 
-  const handleSpotifyLogin = () => {
-    authApi.initiateSpotifyAuth()
+  const handleSpotifyLogin = async () => {
+    try {
+      await authApi.initiateSpotifyAuth()
+    } catch (err) {
+      console.error('Failed to initiate Spotify login:', err)
+      // Optionally show error to user
+    }
   }
 
   if (loading) {

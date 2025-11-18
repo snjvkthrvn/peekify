@@ -57,9 +57,11 @@ export const authApi = {
       localStorage.removeItem('auth_token')
     }
   },
-  initiateSpotifyAuth: () => {
-    // Redirect to backend OAuth endpoint
-    window.location.href = `${API_URL}/auth/login`
+  initiateSpotifyAuth: async () => {
+    // Call backend to get Spotify OAuth URL
+    const response = await api<{ success: boolean; authUrl: string }>('/auth/login')
+    // Redirect browser to Spotify authorization page
+    window.location.href = response.authUrl
   },
 }
 
