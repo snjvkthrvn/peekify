@@ -1,0 +1,12 @@
+# Allow all bots to crawl public pages
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /settings/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://replay.app/sitemap.xml
+
+# Crawl delay for politeness
+Crawl-delay: 1
