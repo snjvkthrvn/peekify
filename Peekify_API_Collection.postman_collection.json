@@ -1,0 +1,673 @@
+{
+  "info": {
+    "name": "Peekify API Collection",
+    "description": "Complete API collection for Peekify - Spotify listening history sharing app",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://peekify.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Basic Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test",
+              "host": ["{{base_url}}"],
+              "path": ["test"]
+            },
+            "description": "Check if the backend is running"
+          }
+        },
+        {
+          "name": "Test All Services",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/all",
+              "host": ["{{base_url}}"],
+              "path": ["test", "all"]
+            },
+            "description": "Test all services (DB, Redis, Supabase, Firebase, Spotify) at once"
+          }
+        },
+        {
+          "name": "Test Database",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/db",
+              "host": ["{{base_url}}"],
+              "path": ["test", "db"]
+            },
+            "description": "Test PostgreSQL (Neon) connection"
+          }
+        },
+        {
+          "name": "Test Redis",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/redis",
+              "host": ["{{base_url}}"],
+              "path": ["test", "redis"]
+            },
+            "description": "Test Redis (Upstash) connection"
+          }
+        },
+        {
+          "name": "Test Supabase",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/supabase",
+              "host": ["{{base_url}}"],
+              "path": ["test", "supabase"]
+            },
+            "description": "Test Supabase Storage connection"
+          }
+        },
+        {
+          "name": "Test Firebase",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/firebase",
+              "host": ["{{base_url}}"],
+              "path": ["test", "firebase"]
+            },
+            "description": "Test Firebase Cloud Messaging configuration"
+          }
+        },
+        {
+          "name": "Test Spotify Config",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/spotify",
+              "host": ["{{base_url}}"],
+              "path": ["test", "spotify"]
+            },
+            "description": "Test Spotify API configuration"
+          }
+        },
+        {
+          "name": "Get VAPID Key",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/vapid",
+              "host": ["{{base_url}}"],
+              "path": ["test", "vapid"]
+            },
+            "description": "Get VAPID key for web push notifications"
+          }
+        },
+        {
+          "name": "Get WebSocket URL",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/ws",
+              "host": ["{{base_url}}"],
+              "path": ["test", "ws"]
+            },
+            "description": "Get WebSocket server URL"
+          }
+        }
+      ],
+      "description": "Health check and service testing endpoints (no auth required)"
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login with Spotify",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Initiates Spotify OAuth flow. Open this in a browser to log in. After successful login, copy the JWT token from the response."
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Get currently authenticated user details"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout and invalidate JWT token"
+          }
+        }
+      ],
+      "description": "Spotify OAuth authentication endpoints"
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Get your own user profile"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"New Display Name\",\n  \"email\": \"newemail@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Update your display name or email"
+          }
+        },
+        {
+          "name": "Upload Avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select an image file (max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me/avatar",
+              "host": ["{{base_url}}"],
+              "path": ["users", "me", "avatar"]
+            },
+            "description": "Upload profile avatar image (max 5MB, images only)"
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/:userId",
+              "host": ["{{base_url}}"],
+              "path": ["users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user-uuid-here",
+                  "description": "User UUID"
+                }
+              ]
+            },
+            "description": "Get public profile of any user (no auth required)"
+          }
+        }
+      ],
+      "description": "User profile management endpoints"
+    },
+    {
+      "name": "Listening History",
+      "item": [
+        {
+          "name": "Get Listening History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/history?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of tracks to return (default: 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of tracks to skip (default: 0)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2025-01-01",
+                  "description": "Filter by start date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-01-31",
+                  "description": "Filter by end date (ISO format)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get your listening history from the database"
+          }
+        },
+        {
+          "name": "Sync from Spotify",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/history/sync",
+              "host": ["{{base_url}}"],
+              "path": ["history", "sync"]
+            },
+            "description": "Sync recently played tracks from Spotify API (rate limited: 10/min)"
+          }
+        },
+        {
+          "name": "Get Listening Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/history/stats?startDate=2025-01-01&endDate=2025-01-31",
+              "host": ["{{base_url}}"],
+              "path": ["history", "stats"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-01-01",
+                  "description": "Start date (ISO format)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-01-31",
+                  "description": "End date (ISO format)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get listening statistics (total minutes, track count, top tracks/artists)"
+          }
+        }
+      ],
+      "description": "Spotify listening history endpoints"
+    },
+    {
+      "name": "Feed & Social",
+      "item": [
+        {
+          "name": "Get Global Feed",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["feed"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Number of items to return (default: 50)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of items to skip (default: 0)"
+                },
+                {
+                  "key": "userId",
+                  "value": "user-uuid-here",
+                  "description": "Filter by specific user",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get global feed or filter by user (no auth required for viewing)"
+          }
+        },
+        {
+          "name": "Create Feed Post - Track",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"track\",\n  \"content\": {\n    \"trackName\": \"Bohemian Rhapsody\",\n    \"artistName\": \"Queen\",\n    \"albumName\": \"A Night at the Opera\",\n    \"trackId\": \"spotify:track:123abc\",\n    \"albumArt\": \"https://i.scdn.co/image/123abc\",\n    \"message\": \"This song never gets old! 🎸\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed",
+              "host": ["{{base_url}}"],
+              "path": ["feed"]
+            },
+            "description": "Create a new feed post about a track"
+          }
+        },
+        {
+          "name": "Create Feed Post - Recap",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"recap\",\n  \"content\": {\n    \"date\": \"2025-01-17\",\n    \"totalMinutes\": 240,\n    \"trackCount\": 48,\n    \"topTracks\": [\n      {\"name\": \"Song 1\", \"artist\": \"Artist 1\", \"playCount\": 5},\n      {\"name\": \"Song 2\", \"artist\": \"Artist 2\", \"playCount\": 4}\n    ],\n    \"topArtists\": [\n      {\"name\": \"Artist 1\", \"playCount\": 10},\n      {\"name\": \"Artist 2\", \"playCount\": 8}\n    ],\n    \"message\": \"Check out my listening recap for today!\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed",
+              "host": ["{{base_url}}"],
+              "path": ["feed"]
+            },
+            "description": "Share a daily recap post"
+          }
+        },
+        {
+          "name": "Create Feed Post - Milestone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"milestone\",\n  \"content\": {\n    \"milestoneType\": \"hours_listened\",\n    \"value\": 100,\n    \"message\": \"Just hit 100 hours of listening! 🎉\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed",
+              "host": ["{{base_url}}"],
+              "path": ["feed"]
+            },
+            "description": "Share a milestone achievement"
+          }
+        },
+        {
+          "name": "Get Comments",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed/:feedItemId/comments",
+              "host": ["{{base_url}}"],
+              "path": ["feed", ":feedItemId", "comments"],
+              "variable": [
+                {
+                  "key": "feedItemId",
+                  "value": "feed-item-uuid-here",
+                  "description": "Feed item UUID"
+                }
+              ]
+            },
+            "description": "Get all comments for a feed item (no auth required)"
+          }
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Great taste in music! 🎵\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed/:feedItemId/comments",
+              "host": ["{{base_url}}"],
+              "path": ["feed", ":feedItemId", "comments"],
+              "variable": [
+                {
+                  "key": "feedItemId",
+                  "value": "feed-item-uuid-here",
+                  "description": "Feed item UUID"
+                }
+              ]
+            },
+            "description": "Add a comment to a feed item (sends push notification to post owner)"
+          }
+        },
+        {
+          "name": "Add Reaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emoji\": \"🔥\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feed/:feedItemId/reactions",
+              "host": ["{{base_url}}"],
+              "path": ["feed", ":feedItemId", "reactions"],
+              "variable": [
+                {
+                  "key": "feedItemId",
+                  "value": "feed-item-uuid-here",
+                  "description": "Feed item UUID"
+                }
+              ]
+            },
+            "description": "Add emoji reaction to a feed item (sends push notification to post owner)"
+          }
+        }
+      ],
+      "description": "Social feed, comments, and reactions endpoints"
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Subscribe to Push Notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscription\": {\n    \"token\": \"fcm_device_token_from_firebase_here\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/subscribe",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscribe"]
+            },
+            "description": "Subscribe to push notifications (requires FCM device token from browser)"
+          }
+        },
+        {
+          "name": "Unsubscribe from Notifications",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subscription\": {\n    \"token\": \"fcm_device_token_to_remove\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/unsubscribe",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "unsubscribe"]
+            },
+            "description": "Unsubscribe from push notifications"
+          }
+        },
+        {
+          "name": "Get My Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "subscriptions"]
+            },
+            "description": "Get all your push notification subscriptions"
+          }
+        },
+        {
+          "name": "Send Test Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Notification\",\n  \"body\": \"This is a test push notification from Peekify!\",\n  \"icon\": \"https://example.com/icon.png\",\n  \"url\": \"https://peekify.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/notifications/send",
+              "host": ["{{base_url}}"],
+              "path": ["notifications", "send"]
+            },
+            "description": "Send a test notification to yourself"
+          }
+        }
+      ],
+      "description": "Push notification subscription and testing endpoints"
+    }
+  ]
+}
