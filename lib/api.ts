@@ -8,23 +8,39 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options
 
   let url = `${API_URL}${endpoint}`
-  
+
   if (params) {
     const searchParams = new URLSearchParams(params)
     url += `?${searchParams.toString()}`
   }
 
+  // Get JWT token from localStorage
+  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+
+  // Build headers with token if available
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...fetchOptions.headers as Record<string, string>,
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
   const response = await fetch(url, {
     ...fetchOptions,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...fetchOptions.headers,
-    },
+    headers,
   })
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'An error occurred' }))
+
+    // Clear token on 401 Unauthorized
+    if (response.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token')
+    }
+
     throw new Error(error.message || `API Error: ${response.status}`)
   }
 
@@ -33,16 +49,18 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
 
 // Auth endpoints
 export const authApi = {
-  getStatus: () => api<{ authenticated: boolean; user?: any }>('/auth/status'),
-  logout: () => api('/auth/logout', { method: 'POST' }),
-  initiateSpotifyAuth: () => {
-    window.location.href = `${API_URL}/auth/spotify`
+  getMe: () => api<any>('/auth/me'),
+  logout: async () => {
+    await api('/auth/logout', { method: 'POST' })
+    // Clear token from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('auth_token')
+    }
   },
-  handleCallback: (code: string) => 
-    api('/auth/callback', { 
-      method: 'POST',
-      body: JSON.stringify({ code })
-    }),
+  initiateSpotifyAuth: () => {
+    // Redirect to backend OAuth endpoint
+    window.location.href = `${API_URL}/auth/login`
+  },
 }
 
 // User endpoints
