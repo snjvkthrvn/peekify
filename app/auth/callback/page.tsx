@@ -15,7 +15,8 @@ function CallbackContent() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      const code = searchParams.get('code')
+      // Backend sends 'token' (JWT) instead of 'code'
+      const token = searchParams.get('token')
       const errorParam = searchParams.get('error')
 
       if (errorParam) {
@@ -23,17 +24,22 @@ function CallbackContent() {
         return
       }
 
-      if (!code) {
-        setError('No authorization code received.')
+      if (!token) {
+        setError('No authorization token received.')
         return
       }
 
       try {
-        await authApi.handleCallback(code)
+        // Save JWT token to localStorage
+        localStorage.setItem('auth_token', token)
+
+        // Update auth context with user data
         await refreshUser()
+
+        // Redirect to onboarding/feed
         router.push('/onboarding')
       } catch (err) {
-        console.error('[v0] Callback error:', err)
+        console.error('Callback error:', err)
         setError(err instanceof Error ? err.message : 'Failed to complete authorization')
       }
     }

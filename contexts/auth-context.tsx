@@ -22,12 +22,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = async () => {
     try {
       setLoading(true)
-      const status = await authApi.getStatus()
-      if (status.authenticated && status.user) {
-        setUser(status.user)
-      } else {
+      // Check if token exists
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      if (!token) {
         setUser(null)
+        setError(null)
+        return
       }
+
+      // Fetch user data from /auth/me
+      const response = await authApi.getMe()
+      setUser(response.user || response) // Handle both { user: {...} } and direct user object
       setError(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch user')
