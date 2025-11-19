@@ -1,6 +1,10 @@
--- Replay Backend Database Schema
+-- Peekify Backend Database Schema
 -- For Neon PostgreSQL
 -- Run this script to set up your database
+--
+-- Updated: 2024-11-19
+-- Added: username, bio, privacy_level, timezone, notification_time to users
+-- Added: comment_likes, friends, friend_requests tables
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -12,9 +16,18 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255),
   display_name VARCHAR(255),
   profile_picture_url TEXT,
+  username VARCHAR(50) UNIQUE,
+  bio TEXT,
+  privacy_level VARCHAR(20) DEFAULT 'public' CHECK (privacy_level IN ('private', 'friends', 'public')),
+  timezone VARCHAR(100) DEFAULT 'UTC',
+  notification_time TIME DEFAULT '21:30',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Create indexes on users table
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_spotify_id ON users(spotify_id);
 
 -- Spotify tokens table
 CREATE TABLE IF NOT EXISTS spotify_tokens (
@@ -101,6 +114,50 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   UNIQUE(user_id, subscription_data)
 );
 
+-- Comment likes table
+CREATE TABLE IF NOT EXISTS comment_likes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  comment_id UUID REFERENCES comments(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(comment_id, user_id)
+);
+
+-- Create indexes for comment likes
+CREATE INDEX IF NOT EXISTS idx_comment_likes_comment_id ON comment_likes(comment_id);
+CREATE INDEX IF NOT EXISTS idx_comment_likes_user_id ON comment_likes(user_id);
+
+-- Friends table
+CREATE TABLE IF NOT EXISTS friends (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  friend_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, friend_id),
+  CHECK (user_id != friend_id)
+);
+
+-- Create indexes for friends
+CREATE INDEX IF NOT EXISTS idx_friends_user_id ON friends(user_id);
+CREATE INDEX IF NOT EXISTS idx_friends_friend_id ON friends(friend_id);
+
+-- Friend requests table
+CREATE TABLE IF NOT EXISTS friend_requests (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(sender_id, receiver_id),
+  CHECK (sender_id != receiver_id)
+);
+
+-- Create indexes for friend requests
+CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_id ON friend_requests(sender_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver_id ON friend_requests(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_friend_requests_status ON friend_requests(status);
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -116,4 +173,8 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 
 -- Apply updated_at trigger to spotify_tokens table
 CREATE TRIGGER update_spotify_tokens_updated_at BEFORE UPDATE ON spotify_tokens
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Apply updated_at trigger to friend_requests table
+CREATE TRIGGER update_friend_requests_updated_at BEFORE UPDATE ON friend_requests
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
