@@ -10,6 +10,7 @@ const {
   updateProfile,
   uploadAvatar,
   getUserById,
+  searchUsers,
   upload,
 } = require('../controllers/userController');
 const { authenticate } = require('../middlewares/authMiddleware');
@@ -17,6 +18,9 @@ const { apiRateLimiter } = require('../middlewares/rateLimit');
 
 // Apply rate limiting
 router.use(apiRateLimiter);
+
+// GET /users/search - Search users (must be before /:userId to avoid conflict)
+router.get('/search', searchUsers);
 
 // GET /users/me - Get current user profile
 router.get('/me', authenticate, getProfile);
