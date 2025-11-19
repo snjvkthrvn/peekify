@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Keep Peekify Backend Alive</title>
+  <style>
+    body {
+      font-family: system-ui;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #fff;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      background: #1a1a1a;
+    }
+    .success { border-left: 4px solid #1db954; }
+    .error { border-left: 4px solid #ff4444; }
+    button {
+      background: #1db954;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Peekify Backend Keep-Alive</h1>
+  <p>This page pings your backend every 10 minutes to prevent Render free tier from sleeping.</p>
+
+  <button id="toggleBtn" onclick="toggle()">Start Monitoring</button>
+
+  <div id="status"></div>
+
+  <script>
+    let intervalId = null;
+    let isRunning = false;
+    const BACKEND_URL = 'https://peekify.onrender.com';
+
+    async function pingBackend() {
+      const timestamp = new Date().toLocaleTimeString();
+      try {
+        const response = await fetch(`${BACKEND_URL}/test`, {
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        const data = await response.json();
+
+        addStatus(`✅ ${timestamp} - Backend is alive (${response.status})`, 'success');
+      } catch (error) {
+        addStatus(`❌ ${timestamp} - Backend is down: ${error.message}`, 'error');
+      }
+    }
+
+    function addStatus(message, type) {
+      const statusDiv = document.getElementById('status');
+      const entry = document.createElement('div');
+      entry.className = `status ${type}`;
+      entry.textContent = message;
+      statusDiv.insertBefore(entry, statusDiv.firstChild);
+
+      // Keep only last 20 entries
+      while (statusDiv.children.length > 20) {
+        statusDiv.removeChild(statusDiv.lastChild);
+      }
+    }
+
+    function toggle() {
+      const btn = document.getElementById('toggleBtn');
+
+      if (isRunning) {
+        clearInterval(intervalId);
+        btn.textContent = 'Start Monitoring';
+        addStatus('⏸️ Monitoring stopped', 'error');
+        isRunning = false;
+      } else {
+        // Ping immediately
+        pingBackend();
+
+        // Then ping every 10 minutes (600000 ms)
+        intervalId = setInterval(pingBackend, 600000);
+
+        btn.textContent = 'Stop Monitoring';
+        addStatus('▶️ Monitoring started (pinging every 10 minutes)', 'success');
+        isRunning = true;
+      }
+    }
+  </script>
+</body>
+</html>
