@@ -21,6 +21,7 @@ const logger = require('./utils/logger');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const feedRoutes = require('./routes/feed');
+const commentsRoutes = require('./routes/comments');
 const historyRoutes = require('./routes/history');
 const friendsRoutes = require('./routes/friends');
 const notificationsRoutes = require('./routes/notifications');
@@ -74,6 +75,7 @@ function createApp() {
   app.use('/auth', authRoutes);
   app.use('/users', userRoutes);
   app.use('/feed', feedRoutes);
+  app.use('/comments', commentsRoutes);
   app.use('/history', historyRoutes);
   app.use('/friends', friendsRoutes);
   app.use('/notifications', notificationsRoutes);
@@ -89,6 +91,7 @@ function createApp() {
         auth: '/auth',
         users: '/users',
         feed: '/feed',
+        comments: '/comments',
         history: '/history',
         friends: '/friends',
         notifications: '/notifications',

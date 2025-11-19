@@ -214,8 +214,111 @@ const getStats = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /history/today
+ * Get today's most played song (daily reveal)
+ */
+const getTodaysReplay = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+
+  // Calculate today's date range (midnight to now)
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  // Check cache first (5 minute TTL)
+  const cacheKey = `today:${userId}:${todayStart.toISOString()}`;
+  const cached = await cache.get(cacheKey);
+
+  if (cached) {
+    logger.debug('Returning cached today replay', { userId });
+    return res.json({
+      success: true,
+      ...cached,
+      cached: true,
+    });
+  }
+
+  // Get most played track today
+  const result = await query(
+    `SELECT
+      spotify_track_id,
+      track_name,
+      artist_name,
+      album_name,
+      album_image_url,
+      COUNT(*) as play_count,
+      SUM(duration_ms) as total_duration_ms,
+      MIN(played_at) as first_played_at,
+      MAX(played_at) as last_played_at
+    FROM listening_history
+    WHERE user_id = $1
+      AND played_at >= $2
+      AND played_at <= $3
+    GROUP BY spotify_track_id, track_name, artist_name, album_name, album_image_url
+    ORDER BY play_count DESC, total_duration_ms DESC
+    LIMIT 1`,
+    [userId, todayStart, todayEnd]
+  );
+
+  if (result.rows.length === 0) {
+    // No tracks played today
+    return res.json({
+      success: true,
+      hasTrack: false,
+      message: 'No tracks played today yet',
+      date: todayStart.toISOString(),
+    });
+  }
+
+  const track = result.rows[0];
+
+  // Get total tracks played today
+  const totalResult = await query(
+    `SELECT COUNT(*) as total_plays
+    FROM listening_history
+    WHERE user_id = $1
+      AND played_at >= $2
+      AND played_at <= $3`,
+    [userId, todayStart, todayEnd]
+  );
+
+  const totalPlays = parseInt(totalResult.rows[0].total_plays);
+
+  const response = {
+    hasTrack: true,
+    track: {
+      trackId: track.spotify_track_id,
+      trackName: track.track_name,
+      artistName: track.artist_name,
+      albumName: track.album_name,
+      albumImage: track.album_image_url,
+      playCount: parseInt(track.play_count),
+      totalDurationMs: parseInt(track.total_duration_ms),
+      firstPlayedAt: track.first_played_at,
+      lastPlayedAt: track.last_played_at,
+    },
+    stats: {
+      totalPlays,
+      date: todayStart.toISOString(),
+    },
+  };
+
+  // Cache for 5 minutes (so it updates throughout the day)
+  await cache.set(cacheKey, response, 300);
+
+  logger.info('Today replay calculated', { userId, trackName: track.track_name, playCount: track.play_count });
+
+  res.json({
+    success: true,
+    ...response,
+    cached: false,
+  });
+});
+
 module.exports = {
   syncHistory,
   getHistory,
   getStats,
+  getTodaysReplay,
 };

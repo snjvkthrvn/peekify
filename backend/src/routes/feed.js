@@ -10,7 +10,12 @@ const {
   createFeedItem,
   getComments,
   addComment,
+  deleteComment,
+  toggleCommentLike,
+  getCommentLikes,
   addReaction,
+  removeReaction,
+  getReactions,
 } = require('../controllers/feedController');
 const { authenticate, optionalAuth } = require('../middlewares/authMiddleware');
 const { apiRateLimiter } = require('../middlewares/rateLimit');
@@ -32,5 +37,11 @@ router.post('/:feedItemId/comments', authenticate, addComment);
 
 // POST /feed/:feedItemId/reactions - Add reaction to feed item
 router.post('/:feedItemId/reactions', authenticate, addReaction);
+
+// DELETE /feed/:feedItemId/reactions - Remove reaction from feed item
+router.delete('/:feedItemId/reactions', authenticate, removeReaction);
+
+// GET /feed/:feedItemId/reactions - Get all reactions for feed item
+router.get('/:feedItemId/reactions', getReactions);
 
 module.exports = router;

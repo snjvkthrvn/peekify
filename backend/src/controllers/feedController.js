@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { query } = require('../config/db');
 const { emitFeedUpdate, emitNewComment, emitNewReaction } = require('../services/websocket');
 const { notifyNewComment, notifyNewReaction } = require('../services/notificationService');
-const { asyncHandler, BadRequestError, NotFoundError } = require('../utils/errors');
+const { asyncHandler, BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
 const logger = require('../utils/logger');
 
 /**
@@ -367,10 +367,288 @@ const addReaction = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * DELETE /comments/:id
+ * Delete a comment (only owner can delete)
+ */
+const deleteComment = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { id: commentId } = req.params;
+
+  if (!commentId) {
+    throw new BadRequestError('Comment ID is required');
+  }
+
+  // Check if comment exists and user is owner
+  const commentResult = await query(
+    'SELECT id, user_id, feed_item_id FROM comments WHERE id = $1',
+    [commentId]
+  );
+
+  if (commentResult.rows.length === 0) {
+    throw new NotFoundError('Comment not found');
+  }
+
+  const comment = commentResult.rows[0];
+
+  // Only comment owner can delete
+  if (comment.user_id !== userId) {
+    throw new ForbiddenError('You can only delete your own comments');
+  }
+
+  // Delete the comment (CASCADE will delete likes)
+  await query('DELETE FROM comments WHERE id = $1', [commentId]);
+
+  logger.info('Comment deleted', { commentId, userId });
+
+  res.json({
+    success: true,
+    message: 'Comment deleted',
+  });
+});
+
+/**
+ * POST /comments/:id/like
+ * Toggle like on a comment
+ */
+const toggleCommentLike = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { id: commentId } = req.params;
+
+  if (!commentId) {
+    throw new BadRequestError('Comment ID is required');
+  }
+
+  // Check if comment exists
+  const commentResult = await query(
+    'SELECT id, user_id FROM comments WHERE id = $1',
+    [commentId]
+  );
+
+  if (commentResult.rows.length === 0) {
+    throw new NotFoundError('Comment not found');
+  }
+
+  const comment = commentResult.rows[0];
+
+  // Check if user already liked this comment
+  const existingLike = await query(
+    'SELECT id FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+    [commentId, userId]
+  );
+
+  let liked = false;
+
+  if (existingLike.rows.length > 0) {
+    // Unlike: remove the like
+    await query(
+      'DELETE FROM comment_likes WHERE comment_id = $1 AND user_id = $2',
+      [commentId, userId]
+    );
+    liked = false;
+    logger.info('Comment unliked', { commentId, userId });
+  } else {
+    // Like: add the like
+    await query(
+      'INSERT INTO comment_likes (comment_id, user_id) VALUES ($1, $2)',
+      [commentId, userId]
+    );
+    liked = true;
+    logger.info('Comment liked', { commentId, userId });
+  }
+
+  // Get updated like count
+  const likeCountResult = await query(
+    'SELECT COUNT(*) as count FROM comment_likes WHERE comment_id = $1',
+    [commentId]
+  );
+  const likeCount = parseInt(likeCountResult.rows[0].count);
+
+  res.json({
+    success: true,
+    liked,
+    likeCount,
+  });
+});
+
+/**
+ * GET /comments/:id/likes
+ * Get list of users who liked a comment
+ */
+const getCommentLikes = asyncHandler(async (req, res) => {
+  const { id: commentId } = req.params;
+
+  if (!commentId) {
+    throw new BadRequestError('Comment ID is required');
+  }
+
+  // Check if comment exists
+  const commentResult = await query(
+    'SELECT id FROM comments WHERE id = $1',
+    [commentId]
+  );
+
+  if (commentResult.rows.length === 0) {
+    throw new NotFoundError('Comment not found');
+  }
+
+  // Get all users who liked this comment
+  const result = await query(
+    `SELECT
+      u.id,
+      u.display_name,
+      u.profile_picture_url,
+      u.username,
+      cl.created_at
+    FROM comment_likes cl
+    JOIN users u ON cl.user_id = u.id
+    WHERE cl.comment_id = $1
+    ORDER BY cl.created_at DESC`,
+    [commentId]
+  );
+
+  const likes = result.rows.map(row => ({
+    userId: row.id,
+    displayName: row.display_name,
+    profilePicture: row.profile_picture_url,
+    username: row.username,
+    likedAt: row.created_at,
+  }));
+
+  res.json({
+    success: true,
+    likes,
+    count: likes.length,
+  });
+});
+
+/**
+ * DELETE /feed/:feedItemId/reactions
+ * Remove user's reaction from a feed item
+ */
+const removeReaction = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { feedItemId } = req.params;
+
+  if (!feedItemId) {
+    throw new BadRequestError('Feed item ID is required');
+  }
+
+  // Check if feed item exists
+  const feedItemResult = await query(
+    'SELECT id FROM feed_items WHERE id = $1',
+    [feedItemId]
+  );
+
+  if (feedItemResult.rows.length === 0) {
+    throw new NotFoundError('Feed item not found');
+  }
+
+  // Check if reaction exists
+  const existingReaction = await query(
+    'SELECT id FROM reactions WHERE feed_item_id = $1 AND user_id = $2',
+    [feedItemId, userId]
+  );
+
+  if (existingReaction.rows.length === 0) {
+    throw new NotFoundError('No reaction found to remove');
+  }
+
+  // Remove the reaction
+  await query(
+    'DELETE FROM reactions WHERE feed_item_id = $1 AND user_id = $2',
+    [feedItemId, userId]
+  );
+
+  logger.info('Reaction removed', { feedItemId, userId });
+
+  res.json({
+    success: true,
+    message: 'Reaction removed',
+  });
+});
+
+/**
+ * GET /feed/:feedItemId/reactions
+ * Get all reactions for a feed item with user info
+ */
+const getReactions = asyncHandler(async (req, res) => {
+  const { feedItemId } = req.params;
+
+  if (!feedItemId) {
+    throw new BadRequestError('Feed item ID is required');
+  }
+
+  // Check if feed item exists
+  const feedItemResult = await query(
+    'SELECT id FROM feed_items WHERE id = $1',
+    [feedItemId]
+  );
+
+  if (feedItemResult.rows.length === 0) {
+    throw new NotFoundError('Feed item not found');
+  }
+
+  // Get all reactions with user info
+  const result = await query(
+    `SELECT
+      r.id,
+      r.emoji,
+      r.created_at,
+      u.id as user_id,
+      u.display_name,
+      u.profile_picture_url,
+      u.username
+    FROM reactions r
+    JOIN users u ON r.user_id = u.id
+    WHERE r.feed_item_id = $1
+    ORDER BY r.created_at DESC`,
+    [feedItemId]
+  );
+
+  const reactions = result.rows.map(row => ({
+    id: row.id,
+    emoji: row.emoji,
+    createdAt: row.created_at,
+    user: {
+      id: row.user_id,
+      displayName: row.display_name,
+      profilePicture: row.profile_picture_url,
+      username: row.username,
+    },
+  }));
+
+  // Group reactions by emoji for summary
+  const reactionSummary = reactions.reduce((acc, reaction) => {
+    if (!acc[reaction.emoji]) {
+      acc[reaction.emoji] = {
+        emoji: reaction.emoji,
+        count: 0,
+        users: [],
+      };
+    }
+    acc[reaction.emoji].count++;
+    acc[reaction.emoji].users.push(reaction.user);
+    return acc;
+  }, {});
+
+  res.json({
+    success: true,
+    reactions,
+    summary: Object.values(reactionSummary),
+    totalCount: reactions.length,
+  });
+});
+
 module.exports = {
   getFeed,
   createFeedItem,
   getComments,
   addComment,
+  deleteComment,
+  toggleCommentLike,
+  getCommentLikes,
   addReaction,
+  removeReaction,
+  getReactions,
 };
