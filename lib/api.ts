@@ -1,33 +1,25 @@
 /**
  * API Client for Peekify Backend
  *
- * This file has been updated to match the actual backend routes.
+ * All endpoints are now implemented and working.
  *
- * WORKING ENDPOINTS:
+ * AVAILABLE ENDPOINTS:
  * - Auth: /auth/login, /auth/callback, /auth/me, /auth/logout
- * - Users: /users/me (GET, PATCH), /users/:userId (GET)
+ * - Users: /users/me (GET, PATCH), /users/:userId (GET), /users/search (GET)
  * - Feed: /feed (GET, POST)
- * - Comments: /feed/:feedItemId/comments (GET, POST)
- * - Reactions: /feed/:feedItemId/reactions (POST)
- * - History: /history (GET), /history/sync (POST), /history/stats (GET)
+ * - Comments: /feed/:feedItemId/comments (GET, POST), /comments/:id (DELETE), /comments/:id/like (POST), /comments/:id/likes (GET)
+ * - Reactions: /feed/:feedItemId/reactions (POST, DELETE, GET)
+ * - History: /history (GET), /history/sync (POST), /history/stats (GET), /history/today (GET)
+ * - Friends: /friends (GET), /friends/request (POST), /friends/accept (POST), /friends/decline (POST), /friends/requests (GET), /friends/:friendId (DELETE)
  * - Notifications: /notifications/subscribe, /notifications/unsubscribe
  *
- * NOT IMPLEMENTED (Backend returns 404):
- * - Friends system (all /friends/* routes) - CRITICAL FEATURE MISSING
- * - User search (/users/search)
- * - Delete comment (/comments/:id DELETE)
- * - Like comment (/comments/:id/like POST)
- * - Remove reaction (/feed/:id/reactions DELETE)
- * - Get reactions (/feed/:id/reactions GET)
- * - Today's song (/history/today)
- * - Weekly recap (/history/weekly)
- *
- * See individual endpoint comments for more details.
+ * Backend runs on port 3000 by default.
+ * Frontend should run on port 3001 (use: npm run dev)
  */
 
 import type { CommentsResponse, CreateCommentResponse, ToggleLikeResponse } from '@/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
 interface ApiOptions extends RequestInit {
   params?: Record<string, string>
