@@ -22,6 +22,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const feedRoutes = require('./routes/feed');
 const historyRoutes = require('./routes/history');
+const friendsRoutes = require('./routes/friends');
 const notificationsRoutes = require('./routes/notifications');
 const testRoutes = require('./routes/test-routes');
 
@@ -74,6 +75,7 @@ function createApp() {
   app.use('/users', userRoutes);
   app.use('/feed', feedRoutes);
   app.use('/history', historyRoutes);
+  app.use('/friends', friendsRoutes);
   app.use('/notifications', notificationsRoutes);
   app.use('/test', testRoutes);
 
@@ -81,13 +83,14 @@ function createApp() {
   app.get('/', (req, res) => {
     res.json({
       success: true,
-      message: 'Replay API - Spotify Listening History Sharing',
+      message: 'Peekify API - Spotify Listening History Sharing',
       version: '1.0.0',
       endpoints: {
         auth: '/auth',
         users: '/users',
         feed: '/feed',
         history: '/history',
+        friends: '/friends',
         notifications: '/notifications',
         test: '/test',
         health: '/health',

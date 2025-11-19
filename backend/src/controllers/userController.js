@@ -34,7 +34,9 @@ const getProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   const result = await query(
-    'SELECT id, spotify_id, email, display_name, profile_picture_url, created_at FROM users WHERE id = $1',
+    `SELECT id, spotify_id, email, display_name, profile_picture_url, username, bio,
+            privacy_level, timezone, notification_time, created_at
+     FROM users WHERE id = $1`,
     [userId]
   );
 
@@ -52,6 +54,11 @@ const getProfile = asyncHandler(async (req, res) => {
       email: user.email,
       displayName: user.display_name,
       profilePicture: user.profile_picture_url,
+      username: user.username,
+      bio: user.bio,
+      privacyLevel: user.privacy_level,
+      timezone: user.timezone,
+      notificationTime: user.notification_time,
       createdAt: user.created_at,
     },
   });
@@ -63,7 +70,7 @@ const getProfile = asyncHandler(async (req, res) => {
  */
 const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { displayName, email } = req.body;
+  const { displayName, email, username, bio, privacyLevel, timezone, notificationTime } = req.body;
 
   // Build update query dynamically
   const updates = [];
@@ -82,6 +89,52 @@ const updateProfile = asyncHandler(async (req, res) => {
     paramCount++;
   }
 
+  if (username !== undefined) {
+    // Validate username format
+    if (!/^[a-zA-Z0-9_]{3,50}$/.test(username)) {
+      throw new BadRequestError('Username must be 3-50 characters and contain only letters, numbers, and underscores');
+    }
+    updates.push(`username = $${paramCount}`);
+    values.push(username);
+    paramCount++;
+  }
+
+  if (bio !== undefined) {
+    // Limit bio length
+    if (bio.length > 500) {
+      throw new BadRequestError('Bio must be 500 characters or less');
+    }
+    updates.push(`bio = $${paramCount}`);
+    values.push(bio);
+    paramCount++;
+  }
+
+  if (privacyLevel !== undefined) {
+    // Validate privacy level
+    if (!['private', 'friends', 'public'].includes(privacyLevel)) {
+      throw new BadRequestError('Privacy level must be private, friends, or public');
+    }
+    updates.push(`privacy_level = $${paramCount}`);
+    values.push(privacyLevel);
+    paramCount++;
+  }
+
+  if (timezone !== undefined) {
+    updates.push(`timezone = $${paramCount}`);
+    values.push(timezone);
+    paramCount++;
+  }
+
+  if (notificationTime !== undefined) {
+    // Validate time format (HH:MM)
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(notificationTime)) {
+      throw new BadRequestError('Notification time must be in HH:MM format');
+    }
+    updates.push(`notification_time = $${paramCount}`);
+    values.push(notificationTime);
+    paramCount++;
+  }
+
   if (updates.length === 0) {
     throw new BadRequestError('No fields to update');
   }
@@ -92,7 +145,8 @@ const updateProfile = asyncHandler(async (req, res) => {
     UPDATE users
     SET ${updates.join(', ')}
     WHERE id = $${paramCount}
-    RETURNING id, spotify_id, email, display_name, profile_picture_url, created_at
+    RETURNING id, spotify_id, email, display_name, profile_picture_url, username, bio,
+              privacy_level, timezone, notification_time, created_at
   `;
 
   const result = await query(updateQuery, values);
@@ -108,6 +162,11 @@ const updateProfile = asyncHandler(async (req, res) => {
       email: user.email,
       displayName: user.display_name,
       profilePicture: user.profile_picture_url,
+      username: user.username,
+      bio: user.bio,
+      privacyLevel: user.privacy_level,
+      timezone: user.timezone,
+      notificationTime: user.notification_time,
       createdAt: user.created_at,
     },
   });
@@ -157,7 +216,8 @@ const getUserById = asyncHandler(async (req, res) => {
   const { userId } = req.params;
 
   const result = await query(
-    'SELECT id, display_name, profile_picture_url, created_at FROM users WHERE id = $1',
+    `SELECT id, display_name, profile_picture_url, username, bio, privacy_level, created_at
+     FROM users WHERE id = $1`,
     [userId]
   );
 
@@ -173,8 +233,58 @@ const getUserById = asyncHandler(async (req, res) => {
       id: user.id,
       displayName: user.display_name,
       profilePicture: user.profile_picture_url,
+      username: user.username,
+      bio: user.bio,
+      privacyLevel: user.privacy_level,
       createdAt: user.created_at,
     },
+  });
+});
+
+/**
+ * GET /users/search
+ * Search users by username or display name
+ */
+const searchUsers = asyncHandler(async (req, res) => {
+  const { q: searchQuery, limit = 20 } = req.query;
+
+  if (!searchQuery || searchQuery.trim().length < 2) {
+    throw new BadRequestError('Search query must be at least 2 characters');
+  }
+
+  const searchTerm = searchQuery.trim();
+
+  // Search by username or display name (case-insensitive)
+  const result = await query(
+    `SELECT id, display_name, profile_picture_url, username, bio
+     FROM users
+     WHERE LOWER(username) LIKE LOWER($1) OR LOWER(display_name) LIKE LOWER($1)
+     ORDER BY
+       CASE
+         WHEN LOWER(username) = LOWER($2) THEN 1
+         WHEN LOWER(display_name) = LOWER($2) THEN 2
+         WHEN LOWER(username) LIKE LOWER($3) THEN 3
+         WHEN LOWER(display_name) LIKE LOWER($3) THEN 4
+         ELSE 5
+       END,
+       username ASC
+     LIMIT $4`,
+    [`%${searchTerm}%`, searchTerm, `${searchTerm}%`, limit]
+  );
+
+  const users = result.rows.map(user => ({
+    id: user.id,
+    displayName: user.display_name,
+    profilePicture: user.profile_picture_url,
+    username: user.username,
+    bio: user.bio,
+  }));
+
+  res.json({
+    success: true,
+    users,
+    count: users.length,
+    query: searchQuery,
   });
 });
 
@@ -183,5 +293,6 @@ module.exports = {
   updateProfile,
   uploadAvatar,
   getUserById,
+  searchUsers,
   upload, // Export multer middleware
 };
