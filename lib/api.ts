@@ -114,13 +114,14 @@ export const reactionsApi = {
 
 // Comments endpoints
 export const commentsApi = {
-  addComment: (postId: string, text: string) => 
-    api(`/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }),
-  getComments: (postId: string) => api<any>(`/posts/${postId}/comments`),
-  deleteComment: (commentId: string) => 
+  addComment: (feedItemId: string, content: string) =>
+    api('/comments', { method: 'POST', body: JSON.stringify({ feedItemId, content }) }),
+  getComments: (feedItemId: string) => api<any>(`/comments/feed/${feedItemId}`),
+  deleteComment: (commentId: string) =>
     api(`/comments/${commentId}`, { method: 'DELETE' }),
-  likeComment: (commentId: string) => 
+  toggleLike: (commentId: string) =>
     api(`/comments/${commentId}/like`, { method: 'POST' }),
+  getLikes: (commentId: string) => api<any>(`/comments/${commentId}/likes`),
 }
 
 // Stats endpoints
