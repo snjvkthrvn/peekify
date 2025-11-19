@@ -3,9 +3,10 @@
  *
  * Provides methods to interact with Spotify Web API through our backend
  * Backend handles authentication and token management
+ * Backend runs on port 3000 by default
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
 
 class SpotifyApiError extends Error {
   constructor(message: string, public statusCode?: number) {
