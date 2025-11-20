@@ -164,13 +164,13 @@ export const commentsApi = {
       body: JSON.stringify({ content }),
     }),
   getComments: (feedItemId: string) => api<CommentsResponse>(`/feed/${feedItemId}/comments`),
-  // TODO: Backend DELETE /comments/:id endpoint doesn't exist - needs implementation
+
   deleteComment: (commentId: string) =>
     api<void>(`/comments/${commentId}`, { method: 'DELETE' }),
-  // TODO: Backend POST /comments/:id/like endpoint doesn't exist - needs implementation
+
   toggleLike: (commentId: string) =>
     api<ToggleLikeResponse>(`/comments/${commentId}/like`, { method: 'POST' }),
-  // TODO: Backend GET /comments/:id/likes endpoint doesn't exist - needs implementation
+
   getLikes: (commentId: string) => api<ToggleLikeResponse>(`/comments/${commentId}/likes`),
 }
 
